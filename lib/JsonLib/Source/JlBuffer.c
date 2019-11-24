@@ -1,0 +1,200 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  JsonLib
+//
+//
+//  This is free and unencumbered software released into the public domain - November 2019 waterjuice.org
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  IMPORTS
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include "JlBuffer.h"
+#include "JlMemory.h"
+#include "JlStatus.h"
+#include <stdint.h>
+#include <stdlib.h>
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  CONSTANTS
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define BUFFER_GROW_SIZE        ( 16*1024 )         // 16 kB
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  TYPES
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct JlBuffer
+{
+    size_t      BufferUsed;
+    size_t      BufferAllocated;
+    uint8_t*    Buffer;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  PUBLIC FUNCTIONS
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  JlBufferCreate
+//
+//  Creates a new empty JlBuffer.
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+JlBuffer*
+    JlBufferCreate
+    (
+        void
+    )
+{
+    JlBuffer* newBuffer = JlNew( JlBuffer );
+    if( NULL != newBuffer )
+    {
+        newBuffer->Buffer = JlAlloc( BUFFER_GROW_SIZE );
+        if( NULL != newBuffer->Buffer )
+        {
+            newBuffer->BufferAllocated = BUFFER_GROW_SIZE;
+            newBuffer->BufferUsed = 0;
+        }
+        else
+        {
+            JlFree( newBuffer );
+            newBuffer = NULL;
+        }
+    }
+    else
+    {
+        // Failed to allocate
+    }
+
+    return newBuffer;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  JlBufferFree
+//
+//  Deallocates a JlBuffer
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+JL_STATUS
+    JlBufferFree
+    (
+        JlBuffer**      pBufferContext
+    )
+{
+    JL_STATUS jlStatus;
+
+    if(     NULL != pBufferContext
+        &&  NULL != *pBufferContext )
+    {
+        JlFree( (*pBufferContext)->Buffer );
+        JlFree( *pBufferContext );
+        *pBufferContext = NULL;
+
+        jlStatus = JL_STATUS_SUCCESS;
+    }
+    else
+    {
+        jlStatus = JL_STATUS_INVALID_PARAMETER;
+    }
+
+    return jlStatus;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  JlBufferAdd
+//
+//  Add data to the end of the buffer, extending it if required
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+JL_STATUS
+    JlBufferAdd
+    (
+        JlBuffer*       BufferContext,
+        void const*     Data,
+        size_t          DataSize
+    )
+{
+    JL_STATUS jlStatus;
+
+    if(     NULL != BufferContext
+        &&  NULL != Data
+        &&  0 != DataSize )
+    {
+        size_t amountLeft = BufferContext->BufferAllocated - BufferContext->BufferUsed;
+        if( amountLeft < DataSize )
+        {
+            size_t   newSize = BufferContext->BufferAllocated + BUFFER_GROW_SIZE;
+            uint8_t* newBuffer = JlRealloc( BufferContext->Buffer, BufferContext->BufferAllocated, newSize );
+
+            if( NULL != newBuffer )
+            {
+                BufferContext->BufferAllocated = newSize;
+                BufferContext->Buffer = newBuffer;
+                jlStatus = JL_STATUS_SUCCESS;
+            }
+            else
+            {
+                jlStatus = JL_STATUS_OUT_OF_MEMORY;
+            }
+        }
+        else
+        {
+            // No need to grow buffer
+            jlStatus = JL_STATUS_SUCCESS;
+        }
+
+        if( JL_STATUS_SUCCESS == jlStatus )
+        {
+            // Append data
+            memcpy( BufferContext->Buffer + BufferContext->BufferUsed, Data, DataSize );
+            BufferContext->BufferUsed += DataSize;
+        }
+    }
+    else
+    {
+        jlStatus = JL_STATUS_INVALID_PARAMETER;
+    }
+
+    return jlStatus;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  JlBufferGetDataBuffer
+//
+//  Gets the pointer to the internal data buffer in JlBuffer
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void*
+    JlBufferGetDataBuffer
+    (
+        JlBuffer*       BufferContext
+    )
+{
+    void* retBuffer = NULL;
+
+    if( NULL != BufferContext )
+    {
+        retBuffer = BufferContext->Buffer;
+    }
+
+    return retBuffer;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  JlBufferGetDataSize
+//
+//  Gets the size of the data used in the JlBuffer
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+size_t
+    JlBufferGetDataSize
+    (
+        JlBuffer*       BufferContext
+    )
+{
+    size_t retSize = 0;
+
+    if( NULL != BufferContext )
+    {
+        retSize = BufferContext->BufferUsed;
+    }
+
+    return retSize;
+}
