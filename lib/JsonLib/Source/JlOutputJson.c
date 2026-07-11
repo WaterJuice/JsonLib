@@ -464,7 +464,12 @@ JL_STATUS
         // Add next list item to stack
         JlDataObject* nextObject = NULL;
         jlStatus = JlGetObjectListNextItem( currentItem->Object, &nextObject, &currentItem->ListEnumerator );
-        if( JL_STATUS_SUCCESS == jlStatus )
+        if( JL_STATUS_SUCCESS == jlStatus  &&  *pStackDepth + 1 >= MAX_JSON_DEPTH )
+        {
+            // The object tree is nested deeper than the fixed process stack can hold.
+            jlStatus = JL_STATUS_JSON_NESTING_TOO_DEEP;
+        }
+        else if( JL_STATUS_SUCCESS == jlStatus )
         {
             // Add item to stack
             ProcessStack* newItem = &Stack[*pStackDepth+1];
@@ -697,7 +702,12 @@ JL_STATUS
         JlDataObject* nextObject = NULL;
         char const* nextObjectKey = NULL;
         jlStatus = JlGetObjectDictionaryNextItem( currentItem->Object, &nextObject, &nextObjectKey, &currentItem->DictionaryEnumerator );
-        if( JL_STATUS_SUCCESS == jlStatus )
+        if( JL_STATUS_SUCCESS == jlStatus  &&  *pStackDepth + 1 >= MAX_JSON_DEPTH )
+        {
+            // The object tree is nested deeper than the fixed process stack can hold.
+            jlStatus = JL_STATUS_JSON_NESTING_TOO_DEEP;
+        }
+        else if( JL_STATUS_SUCCESS == jlStatus )
         {
             // Add item to stack
             ProcessStack* newItem = &Stack[*pStackDepth+1];

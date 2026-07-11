@@ -122,7 +122,14 @@ JL_STATUS
         size_t amountLeft = BufferContext->BufferAllocated - BufferContext->BufferUsed;
         if( amountLeft < DataSize )
         {
+            // Grow by whole blocks until the buffer can hold the new data. A single block is not
+            // guaranteed to be enough: DataSize can be larger than BUFFER_GROW_SIZE (e.g. a long
+            // dictionary key added in one call), so loop until it fits.
             size_t   newSize = BufferContext->BufferAllocated + BUFFER_GROW_SIZE;
+            while( newSize - BufferContext->BufferUsed < DataSize )
+            {
+                newSize += BUFFER_GROW_SIZE;
+            }
             uint8_t* newBuffer = JlRealloc( BufferContext->Buffer, BufferContext->BufferAllocated, newSize );
 
             if( NULL != newBuffer )

@@ -579,8 +579,10 @@ JL_STATUS
                 double a_inf = DBL_MAX * 2.0;
                 double a_ninf = DBL_MAX * -2.0;
 
-                if(     0.0 != f64
-                    &&  !isnan( f64 )
+                // Success is already indicated by converted==1; a parsed value of 0.0 is a valid
+                // number (e.g. "0.0", "-0.0", "0e5") and must not be rejected. inf/nan are routed
+                // to the dedicated handling below so they get the library's canonical representation.
+                if(     !isnan( f64 )
                     &&  a_inf != f64
                     &&  a_ninf != f64 )
                 {

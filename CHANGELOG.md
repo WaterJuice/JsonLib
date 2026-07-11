@@ -1,9 +1,26 @@
-# Unreleased
+# JsonLib - 1.1.0 - 2026-07-11
 
 ## Added
 
 - `Makefile` wrapping the CMake build. `make build` compiles everything, `make test` runs
   the unit tests, and `make help` (the default target) lists the rest.
+- Regression tests for all of the fixes below (`ZeroAndNegativeFloats`, `SurrogatePairs`,
+  and `LargeKeyAndDeepNesting`).
+
+## Fixed
+
+- Heap buffer overflow when writing a dictionary key larger than the output buffer's grow
+  block (~32 KB). The buffer now grows by whole blocks until the data fits.
+- Missing nesting-depth bound on the output side: serializing an object tree nested deeper
+  than `MAX_JSON_DEPTH` overran the fixed process stack. It now returns
+  `JL_STATUS_JSON_NESTING_TOO_DEEP`, matching the parser.
+- Unmarshalling a number into a `float` field rejected zero, negatives, and subnormals
+  because the lower bound was `FLT_MIN` (smallest positive normal) instead of `-FLT_MAX`.
+- Zero-valued float literals (`0.0`, `-0.0`) were rejected as invalid data during parsing.
+- Surrogate-pair decoding validated the wrong half, accepting an invalid low surrogate
+  (>= 0xE000) instead of rejecting it.
+- Unchecked size multiplication when allocating an unmarshalled array could overflow
+  `size_t` on 32-bit platforms; oversized lists now return `JL_STATUS_TOO_MANY_ITEMS`.
 
 ## Removed
 

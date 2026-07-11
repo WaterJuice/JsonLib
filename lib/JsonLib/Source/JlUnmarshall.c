@@ -321,8 +321,11 @@ JL_STATUS
         case sizeof(float):
         {
             float* OutputF32 = Output;
-            if( number <= FLT_MAX && number >= FLT_MIN ) { *OutputF32 = (float) number;  }
-            else                                         { jlStatus = JL_STATUS_VALUE_OUT_OF_RANGE;  }
+            // FLT_MAX is the largest magnitude a float can hold. The valid range is symmetric, so
+            // the lower bound is -FLT_MAX (not FLT_MIN, which is the smallest positive normal value
+            // and would wrongly reject zero, negatives, and subnormals).
+            if( number <= FLT_MAX && number >= -FLT_MAX ) { *OutputF32 = (float) number;  }
+            else                                          { jlStatus = JL_STATUS_VALUE_OUT_OF_RANGE;  }
             break;
         }
         default:
@@ -601,17 +604,26 @@ JL_STATUS
             // We need to allocate the array of objects
             void** listPtr = Output;
 
-            size_t allocSize = Description->ArrayItemSize * listCount;
-            void* listAllocation = JlAlloc( allocSize );
-            if( NULL != listAllocation )
+            // Guard against size_t overflow in the array size calculation. Without this a huge
+            // listCount could wrap to a small allocation that the fill loop then writes past.
+            if( 0 != Description->ArrayItemSize  &&  listCount > SIZE_MAX / Description->ArrayItemSize )
             {
-                *listPtr = listAllocation;
-                array = listAllocation;
-                jlStatus = JL_STATUS_SUCCESS;
+                jlStatus = JL_STATUS_TOO_MANY_ITEMS;
             }
             else
             {
-                jlStatus = JL_STATUS_OUT_OF_MEMORY;
+                size_t allocSize = Description->ArrayItemSize * listCount;
+                void* listAllocation = JlAlloc( allocSize );
+                if( NULL != listAllocation )
+                {
+                    *listPtr = listAllocation;
+                    array = listAllocation;
+                    jlStatus = JL_STATUS_SUCCESS;
+                }
+                else
+                {
+                    jlStatus = JL_STATUS_OUT_OF_MEMORY;
+                }
             }
         }
         else

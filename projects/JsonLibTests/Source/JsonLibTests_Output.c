@@ -546,6 +546,73 @@ WJTL_STATUS
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  TestOutputLargeKeyAndDeepNesting
+//
+//  Regression: the output buffer grew by only one fixed block per call, so a dictionary key larger than
+//  that block overflowed the heap; and the output stack had no depth bound, so a tree nested deeper than
+//  MAX_JSON_DEPTH overflowed the fixed stack. Both must now be handled safely.
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static
+WJTL_STATUS
+    TestOutputLargeKeyAndDeepNesting
+    (
+        void
+    )
+{
+    WJTL_STATUS TestReturn = WJTL_STATUS_SUCCESS;
+
+    // Large key: build {"<40000 A's>":1} then round-trip it through parse and output.
+    size_t const keyLen = 40000;
+    char* json = malloc( keyLen + 32 );
+    JL_ASSERT_NOT_NULL( json );
+    if( NULL != json )
+    {
+        strcpy( json, "{\"" );
+        memset( json + 2, 'A', keyLen );
+        strcpy( json + 2 + keyLen, "\":1}" );
+
+        JlDataObject* obj = NULL;
+        JL_ASSERT_SUCCESS( JlParseJson( json, &obj, NULL ) );
+        if( NULL != obj )
+        {
+            char* out = NULL;
+            JL_ASSERT_SUCCESS( JlOutputJson( obj, false, &out ) );
+            JL_ASSERT_NOT_NULL( out );
+            if( NULL != out )
+            {
+                JL_ASSERT( strlen( out ) >= keyLen );
+                JlFreeJsonStringBuffer( &out );
+            }
+            JlFreeObjectTree( &obj );
+        }
+        free( json );
+    }
+
+    // Deep nesting: a tree nested deeper than MAX_JSON_DEPTH must return an error, not overflow the stack.
+    JlDataObject* root = NULL;
+    JL_ASSERT_SUCCESS( JlCreateObject( JL_DATA_TYPE_LIST, &root ) );
+    if( NULL != root )
+    {
+        JlDataObject* current = root;
+        for( int i = 0; i < MAX_JSON_DEPTH * 2  &&  NULL != current; i++ )
+        {
+            JlDataObject* child = NULL;
+            JL_ASSERT_SUCCESS( JlCreateObject( JL_DATA_TYPE_LIST, &child ) );
+            JL_ASSERT_SUCCESS( JlAttachObjectToListObject( current, child ) );
+            current = child;
+        }
+
+        char* out = NULL;
+        JL_ASSERT_STATUS( JlOutputJson( root, false, &out ), JL_STATUS_JSON_NESTING_TOO_DEEP );
+        JL_ASSERT_NULL( out );
+
+        JlFreeObjectTree( &root );
+    }
+
+    return TestReturn;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //  PUBLIC FUNCTIONS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -567,4 +634,5 @@ void
     WjTestLib_AddTest( TestLists, "Lists" );
     WjTestLib_AddTest( TestDictionaries, "Dictionaries" );
     WjTestLib_AddTest( TestOutputFormats, "OutputFormats" );
+    WjTestLib_AddTest( TestOutputLargeKeyAndDeepNesting, "LargeKeyAndDeepNesting" );
 }

@@ -37,11 +37,11 @@ help:
 	@echo ""
 	@echo "Example: make build BUILD_TYPE=Release"
 
-# Re-runs whenever the top level CMakeLists.txt is newer than the generated cache.
-$(BUILD_DIR)/CMakeCache.txt: CMakeLists.txt
+# Always invoke cmake configure. It is idempotent and cheap: it only regenerates when something
+# actually changed. Running it every time (rather than gating on a cache file) means a changed
+# BUILD_TYPE is picked up instead of being silently ignored because the cache already exists.
+configure:
 	cmake -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
-
-configure: $(BUILD_DIR)/CMakeCache.txt
 
 build: configure
 	cmake --build $(BUILD_DIR)
@@ -60,4 +60,8 @@ rewrite: build
 clean:
 	rm -rf $(BUILD_DIR)
 
-rebuild: clean build
+# Uses sub-makes to force clean-then-build ordering. Listing "clean build" as prerequisites would
+# race under "make -j" (build could start before clean finished deleting the directory).
+rebuild:
+	$(MAKE) clean
+	$(MAKE) build

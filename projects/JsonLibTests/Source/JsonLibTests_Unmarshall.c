@@ -1762,6 +1762,101 @@ WJTL_STATUS
     return TestReturn;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  TestUnmarshallZeroAndNegativeFloats
+//
+//  Regression: unmarshalling a float used FLT_MIN (smallest positive normal) as the lower bound, which
+//  wrongly rejected negatives and subnormals; and the parser rejected zero-valued float literals (0.0)
+//  as INVALID_DATA.
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static
+WJTL_STATUS
+    TestUnmarshallZeroAndNegativeFloats
+    (
+        void
+    )
+{
+    WJTL_STATUS TestReturn = WJTL_STATUS_SUCCESS;
+
+    typedef struct
+    {
+        float   f32;
+        double  f64;
+    } FloatStruct;
+
+    JlMarshallElement map[] =
+    {
+        JlMarshallFloat( FloatStruct, f32, "f32" ),
+        JlMarshallFloat( FloatStruct, f64, "f64" ),
+    };
+    uint32_t const mapCount = sizeof(map) / sizeof(map[0]);
+    size_t errorAtPos = 0;
+
+    // Negative values must unmarshal into a float field
+    FloatStruct neg = {0};
+    JL_ASSERT_SUCCESS( JlJsonToStruct( "{\"f32\":-1.5,\"f64\":-2.5}", map, mapCount, &neg, &errorAtPos ) );
+    JL_ASSERT( -1.5f == neg.f32 );
+    JL_ASSERT( -2.5 == neg.f64 );
+
+    // Zero-valued float literals must parse (0.0 and -0.0)
+    FloatStruct zero = {0};
+    JL_ASSERT_SUCCESS( JlJsonToStruct( "{\"f32\":0.0,\"f64\":-0.0}", map, mapCount, &zero, &errorAtPos ) );
+    JL_ASSERT( 0.0f == zero.f32 );
+    JL_ASSERT( 0.0 == zero.f64 );
+
+    // Small negative float near zero
+    FloatStruct small = {0};
+    JL_ASSERT_SUCCESS( JlJsonToStruct( "{\"f32\":-0.001}", map, mapCount, &small, &errorAtPos ) );
+    JL_ASSERT( FloatsAreEqual( -0.001, small.f32 ) );
+
+    return TestReturn;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  TestUnmarshallSurrogatePairs
+//
+//  Regression: the low-surrogate upper-bound check tested the high half instead of the low half, so an
+//  invalid second half (>= 0xE000) was accepted instead of rejected.
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static
+WJTL_STATUS
+    TestUnmarshallSurrogatePairs
+    (
+        void
+    )
+{
+    WJTL_STATUS TestReturn = WJTL_STATUS_SUCCESS;
+
+    typedef struct
+    {
+        char*   str;
+    } StrStruct;
+
+    JlMarshallElement map[] =
+    {
+        JlMarshallString( StrStruct, str, "s" ),
+    };
+    uint32_t const mapCount = sizeof(map) / sizeof(map[0]);
+    size_t errorAtPos = 0;
+
+    // Valid surrogate pair U+1D11E (musical G clef) encodes to UTF-8 F0 9D 84 9E
+    StrStruct good = {0};
+    JL_ASSERT_SUCCESS( JlJsonToStruct( "{\"s\":\"\\uD834\\uDD1E\"}", map, mapCount, &good, &errorAtPos ) );
+    JL_ASSERT_NOT_NULL( good.str );
+    if( NULL != good.str )
+    {
+        JL_ASSERT( 0 == strcmp( good.str, "\xF0\x9D\x84\x9E" ) );
+    }
+    JlUnmarshallFreeStructAllocs( map, mapCount, &good );
+
+    // Invalid second half (0xE000 is not a low surrogate) must be rejected
+    StrStruct bad = {0};
+    JL_ASSERT_STATUS( JlJsonToStruct( "{\"s\":\"\\uD834\\uE000\"}", map, mapCount, &bad, &errorAtPos ), JL_STATUS_INVALID_DATA );
+    JlUnmarshallFreeStructAllocs( map, mapCount, &bad );
+
+    return TestReturn;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //  PUBLIC FUNCTIONS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1793,4 +1888,6 @@ void
     WjTestLib_AddTest( TestUnmarshallPartialFills, "PartialFills" );
     WjTestLib_AddTest( TestUnmarshallLists, "Lists" );
     WjTestLib_AddTest( TestUnmarshallBinary, "BinaryData" );
+    WjTestLib_AddTest( TestUnmarshallZeroAndNegativeFloats, "ZeroAndNegativeFloats" );
+    WjTestLib_AddTest( TestUnmarshallSurrogatePairs, "SurrogatePairs" );
 }

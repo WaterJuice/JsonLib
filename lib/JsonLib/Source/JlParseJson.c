@@ -390,7 +390,7 @@ JL_STATUS
                             uint32_t lowSurrogate = 0;
                             sscanf( String+6, "%4x", &lowSurrogate );
 
-                            if( lowSurrogate >= 0xDC00 && number <=0xDFFF )
+                            if( lowSurrogate >= 0xDC00 && lowSurrogate <= 0xDFFF )
                             {
                                 //  Now assemble the surrogate pairs into a single Unicode point
                                 number = ( ( ( highSurrogate & 0x03ff ) << 10 )
