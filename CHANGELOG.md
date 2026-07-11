@@ -5,6 +5,11 @@
 - `Makefile` wrapping the CMake build. `make build` compiles everything, `make test` runs
   the unit tests, and `make help` (the default target) lists the rest.
 
+## Removed
+
+- `Source/DataModel.c`, a stale pre-rename copy of `JlDataModel.c`. It was not part of the
+  build and could not compile, as the headers it included no longer exist.
+
 # JsonLib - 1.0.0 - 2019-11-24
 
 Initial release.
