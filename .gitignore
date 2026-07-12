@@ -19,6 +19,7 @@ xcuserdata/
 
 # documentation build (wj-mkdocs) and uv virtualenv #
 /html/
+/output/
 /docs/mkdocs/_include/
 .venv/
 __pycache__/

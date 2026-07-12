@@ -15,12 +15,17 @@ TESTS   := $(BUILD_DIR)/projects/JsonLibTests/JsonLibTests
 SAMPLE  := $(BUILD_DIR)/projects/JsonLibSample/JsonLibSample
 REWRITE := $(BUILD_DIR)/projects/JsonRewrite/JsonRewrite
 
-# Version string for the documentation, derived from git (tag if present, else short commit).
-VERSION_STR := $(shell git describe --tags --always 2>/dev/null | sed 's/-/.post.dev/' | sed 's/-g/-/')
+# Project name used for the documentation site path and the docs archive name.
+PROJECT := JsonLib
+
+# Version string for the documentation, derived from git (tag if present, else short commit). The
+# leading "Version_" from this repo's tag is stripped so the version begins with a digit, which the
+# docs publisher requires to parse the archive name.
+VERSION_STR := $(shell git describe --tags --always 2>/dev/null | sed 's/^Version_//' | sed 's/-/.post.dev/' | sed 's/-g/-/')
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build configure test ctest rewrite sample clean rebuild docs docs-deps
+.PHONY: help build configure test ctest rewrite sample clean rebuild docs docs-deps publish-docs
 
 help:
 	@echo "JsonLib - available targets"
@@ -31,7 +36,8 @@ help:
 	@echo "  make sample      Build and run JsonLibSample against SAMPLE_FILE"
 	@echo "  make rewrite     Build the JsonRewrite tool (takes args, so run it yourself)"
 	@echo "  make docs        Build the HTML documentation into html/ (uses wj-mkdocs)"
-	@echo "  make clean       Delete the $(BUILD_DIR) and html/ directories"
+	@echo "  make publish-docs  Build and publish the docs to the WaterJuice docs site"
+	@echo "  make clean       Delete the $(BUILD_DIR), html/ and output/ directories"
 	@echo "  make rebuild     Clean and build from scratch"
 	@echo "  make help        Show this message (default)"
 	@echo ""
@@ -80,8 +86,17 @@ docs-deps:
 	uv --version >/dev/null 2>&1 || pip3 install uv
 	uv sync
 
+# Package the built docs and publish them to the WaterJuice docs site with wj-publish. JsonLib is a
+# C library with nothing to publish to PyPI, so only the docs are published (--docs-only). Publishing
+# requires a wj-publish config with the "waterjuice" profile (see pyproject.toml [tool.wj-publish]).
+publish-docs: docs
+	rm -rf output/
+	mkdir -p output
+	cd html && uv run python -m zipfile -c ../output/$(PROJECT)-$(VERSION_STR)-docs.zip .
+	uv run wj-publish --docs-only output/
+
 clean:
-	rm -rf $(BUILD_DIR) html/
+	rm -rf $(BUILD_DIR) html/ output/
 
 # Uses sub-makes to force clean-then-build ordering. Listing "clean build" as prerequisites would
 # race under "make -j" (build could start before clean finished deleting the directory).

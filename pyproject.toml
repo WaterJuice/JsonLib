@@ -11,7 +11,11 @@ dependencies = []
 [tool.uv]
 package = false
 
+[tool.wj-publish]
+profile = "waterjuice"
+
 [dependency-groups]
 dev = [
     "wj-mkdocs",
+    "wj-publish",
 ]

@@ -9,7 +9,7 @@
 - `ctest` integration. The test executable is registered with `add_test`, and `make ctest`
   runs it portably.
 - Documentation built with `wj-mkdocs`. `make docs` produces a self-contained HTML site in
-  `html/`.
+  `html/`, and `make publish-docs` publishes it to the WaterJuice docs site via `wj-publish`.
 
 ## Fixed
 
