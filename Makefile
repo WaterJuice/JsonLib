@@ -17,13 +17,14 @@ REWRITE := $(BUILD_DIR)/projects/JsonRewrite/JsonRewrite
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build configure test rewrite sample clean rebuild
+.PHONY: help build configure test ctest rewrite sample clean rebuild
 
 help:
 	@echo "JsonLib - available targets"
 	@echo ""
 	@echo "  make build       Configure (if needed) and build everything"
-	@echo "  make test        Build and run the unit tests"
+	@echo "  make test        Build and run the unit tests (detailed output)"
+	@echo "  make ctest       Build and run the unit tests via ctest (portable)"
 	@echo "  make sample      Build and run JsonLibSample against SAMPLE_FILE"
 	@echo "  make rewrite     Build the JsonRewrite tool (takes args, so run it yourself)"
 	@echo "  make clean       Delete the $(BUILD_DIR) directory"
@@ -48,6 +49,9 @@ build: configure
 
 test: build
 	$(TESTS)
+
+ctest: build
+	ctest --test-dir $(BUILD_DIR) --output-on-failure
 
 sample: build
 	$(SAMPLE) $(SAMPLE_FILE)

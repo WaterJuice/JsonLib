@@ -158,9 +158,11 @@ WJTL_STATUS
 
         if( WJTL_STATUS_SUCCESS == wjtlStatus )
         {
-            if( numAssertFails > 0 )
+            if( numAssertFails > 0  ||  0 != Test->NumMemLeaks )
             {
-                // If any assert fail then the test automatically fails
+                // If any assert fails or the test leaks memory then the test automatically fails. This
+                // matches how WjTestLib_DisplayResults decides pass/fail, so the exit code agrees with
+                // the printed summary.
                 wjtlStatus = WJTL_STATUS_FAILED;
             }
         }
@@ -207,7 +209,7 @@ WJTL_STATUS
                     foundTest = true;
 
                     wjtlStatus = RunTest( test );
-                    if( WJTL_STATUS_SUCCESS != testFailed )
+                    if( WJTL_STATUS_SUCCESS != wjtlStatus )
                     {
                         testFailed = true;
                     }

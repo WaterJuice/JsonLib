@@ -50,7 +50,17 @@ bool
     )
 {
     double diff = fabs( Value1 - Value2 );
-    double reldiff = diff / fabs( Value1 );
+
+    // Exact match (covers the case where both are zero, and avoids dividing by zero below).
+    if( diff == 0.0 )
+    {
+        return true;
+    }
+
+    // Compare relative to the larger magnitude so neither a zero Value1 nor a zero Value2 causes a
+    // divide-by-zero (which would yield NaN and wrongly report "not equal").
+    double largest = fabs( Value1 ) > fabs( Value2 ) ? fabs( Value1 ) : fabs( Value2 );
+    double reldiff = diff / largest;
 
     // Note using FLT_EPSILON not DBL_EPSILON because floats may be passed to this function
     if( reldiff <= FLT_EPSILON )

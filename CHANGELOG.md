@@ -6,11 +6,20 @@
   the unit tests, and `make help` (the default target) lists the rest.
 - Regression tests for all of the fixes below (`ZeroAndNegativeFloats`, `SurrogatePairs`,
   and `LargeKeyAndDeepNesting`).
+- `ctest` integration. The test executable is registered with `add_test`, and `make ctest`
+  runs it portably.
 
 ## Fixed
 
 - Heap buffer overflow when writing a dictionary key larger than the output buffer's grow
   block (~32 KB). The buffer now grows by whole blocks until the data fits.
+- Test harness (WjTestLib) always exited with a success code even when tests failed, because
+  the per-test result was discarded in the run loop. A failing assert now produces a non-zero
+  exit code, so `make test`, `make ctest`, and CI can actually gate on it. A memory leak in a
+  test now also fails the run, matching how the printed summary already reported it.
+- Test helper `FloatsAreEqual` divided by the expected value, giving a divide-by-zero (NaN,
+  wrongly reported as unequal) when comparing against zero. It now compares relative to the
+  larger magnitude.
 - Missing nesting-depth bound on the output side: serializing an object tree nested deeper
   than `MAX_JSON_DEPTH` overran the fixed process stack. It now returns
   `JL_STATUS_JSON_NESTING_TOO_DEEP`, matching the parser.
