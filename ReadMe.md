@@ -8,7 +8,7 @@ It parses JSON5 or strict JSON, and outputs JSON or JSON5. By default it parses
 JSON5 and outputs JSON, the most compatible combination. There are no external
 dependencies.
 
-*Created November 2019.*
+*Created November 2019. Version 1.1.0, July 2026.*
 
 ## Documentation
 
