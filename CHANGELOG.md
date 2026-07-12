@@ -8,6 +8,8 @@
   and `LargeKeyAndDeepNesting`).
 - `ctest` integration. The test executable is registered with `add_test`, and `make ctest`
   runs it portably.
+- Documentation built with `wj-mkdocs`. `make docs` produces a self-contained HTML site in
+  `html/`.
 
 ## Fixed
 

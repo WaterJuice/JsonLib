@@ -1,0 +1,17 @@
+# This project is a C library; this file exists only to build the documentation with wj-mkdocs.
+# It is not a Python package - "make docs" uses it via uv to pull in the docs toolchain.
+
+[project]
+name = "jsonlib-docs"
+version = "0"
+description = "Documentation build for JsonLib"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "wj-mkdocs",
+]

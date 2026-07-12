@@ -1,0 +1,18 @@
+INHERIT: !ENV THEME_STD
+site_name: JsonLib
+
+markdown_extensions:
+  - pymdownx.snippets:
+      base_path: docs/mkdocs
+      check_paths: false
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - admonition
+  - attr_list
+
+nav:
+  - Home: index.md
+  - Functions: functions.md
+  - Marshalling Reference: marshalling.md
+  - Changelog: changelog.md
+  - Licence: licence.md

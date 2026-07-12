@@ -15,9 +15,12 @@ TESTS   := $(BUILD_DIR)/projects/JsonLibTests/JsonLibTests
 SAMPLE  := $(BUILD_DIR)/projects/JsonLibSample/JsonLibSample
 REWRITE := $(BUILD_DIR)/projects/JsonRewrite/JsonRewrite
 
+# Version string for the documentation, derived from git (tag if present, else short commit).
+VERSION_STR := $(shell git describe --tags --always 2>/dev/null | sed 's/-/.post.dev/' | sed 's/-g/-/')
+
 .DEFAULT_GOAL := help
 
-.PHONY: help build configure test ctest rewrite sample clean rebuild
+.PHONY: help build configure test ctest rewrite sample clean rebuild docs docs-deps
 
 help:
 	@echo "JsonLib - available targets"
@@ -27,7 +30,8 @@ help:
 	@echo "  make ctest       Build and run the unit tests via ctest (portable)"
 	@echo "  make sample      Build and run JsonLibSample against SAMPLE_FILE"
 	@echo "  make rewrite     Build the JsonRewrite tool (takes args, so run it yourself)"
-	@echo "  make clean       Delete the $(BUILD_DIR) directory"
+	@echo "  make docs        Build the HTML documentation into html/ (uses wj-mkdocs)"
+	@echo "  make clean       Delete the $(BUILD_DIR) and html/ directories"
 	@echo "  make rebuild     Clean and build from scratch"
 	@echo "  make help        Show this message (default)"
 	@echo ""
@@ -61,8 +65,23 @@ rewrite: build
 	@echo "Run it directly:  $(REWRITE) [options] <JsonFile>"
 	@echo "Options:          -a ascii  -i indent  -x hex  -b bare  -s singlequote  -c comma"
 
+# Build the HTML documentation with wj-mkdocs (the WaterJuice standard MkDocs wrapper). Output goes to
+# html/, a self-contained site that can be opened directly or hosted anywhere.
+docs: docs-deps
+	rm -rf html/
+	mkdir -p docs/mkdocs/_include
+	cp CHANGELOG.md docs/mkdocs/_include/
+	VERSION=$(VERSION_STR) uv run wj-mkdocs -f docs/mkdocs.yml -d docs/mkdocs -o html/
+	cp docs/docinfo.* html/
+	rm -rf docs/mkdocs/_include html/_include
+
+# Ensure uv (and thus the docs toolchain) is available. Installs uv via pip if it is missing.
+docs-deps:
+	uv --version >/dev/null 2>&1 || pip3 install uv
+	uv sync
+
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) html/
 
 # Uses sub-makes to force clean-then-build ordering. Listing "clean build" as prerequisites would
 # race under "make -j" (build could start before clean finished deleting the directory).

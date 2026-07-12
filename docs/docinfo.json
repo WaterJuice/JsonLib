@@ -1,0 +1,4 @@
+{
+  "title": "JsonLib",
+  "description": "Marshal C structures to and from JSON and JSON5"
+}
