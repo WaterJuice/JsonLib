@@ -14,5 +14,6 @@ nav:
   - Home: index.md
   - Functions: functions.md
   - Marshalling Reference: marshalling.md
+  - Examples: examples.md
   - Changelog: changelog.md
   - Licence: licence.md

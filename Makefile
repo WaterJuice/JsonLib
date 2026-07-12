@@ -25,12 +25,13 @@ VERSION_STR := $(shell git describe --tags --always 2>/dev/null | sed 's/^Versio
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build configure test ctest rewrite sample clean rebuild docs docs-deps publish-docs
+.PHONY: help build compile configure test ctest rewrite sample clean rebuild docs docs-deps publish-docs
 
 help:
 	@echo "JsonLib - available targets"
 	@echo ""
-	@echo "  make build       Configure (if needed) and build everything"
+	@echo "  make build       Build everything: the library, tools, tests, and documentation"
+	@echo "  make compile     Compile just the C code (library, tools, tests) - no documentation"
 	@echo "  make test        Build and run the unit tests (detailed output)"
 	@echo "  make ctest       Build and run the unit tests via ctest (portable)"
 	@echo "  make sample      Build and run JsonLibSample against SAMPLE_FILE"
@@ -54,19 +55,23 @@ help:
 configure:
 	cmake -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
 
-build: configure
+# Build everything - the C code and the documentation. "make compile" alone builds just the C code
+# (and needs no docs toolchain); the docs step additionally needs uv (installed automatically).
+build: compile docs
+
+compile: configure
 	cmake --build $(BUILD_DIR)
 
-test: build
+test: compile
 	$(TESTS)
 
-ctest: build
+ctest: compile
 	ctest --test-dir $(BUILD_DIR) --output-on-failure
 
-sample: build
+sample: compile
 	$(SAMPLE) $(SAMPLE_FILE)
 
-rewrite: build
+rewrite: compile
 	@echo "Built $(REWRITE)"
 	@echo "Run it directly:  $(REWRITE) [options] <JsonFile>"
 	@echo "Options:          -a ascii  -i indent  -x hex  -b bare  -s singlequote  -c comma"
