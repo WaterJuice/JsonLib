@@ -1,9 +1,9 @@
 JsonLib - User Guide
 ====================
 
-Version 1.0.0
+Version 1.1.0
 
-Released: 24-Nov-2019
+Released: 12-Jul-2026
 
 This is free and unencumbered software released into the public domain - November 2019 waterjuice.org
 
